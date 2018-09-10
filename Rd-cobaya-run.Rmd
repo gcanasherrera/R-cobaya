@@ -1,0 +1,84 @@
+<!---
+This is YAML syntax
+-->
+---
+title: "Rd-cobaya-run"
+author: "Guadalupe Cañas Herrera"
+date: "6/9/2018"
+output: html_document
+---
+
+## Required R-packages
+To run this R-Markdown file, you will need to have locally installed the following packages:
+
+- - -
+
+	1. reticulate (CRAN)
+	2. cobaya (pip)
+	3. getdist (pip)
+
+- - -
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(reticulate)
+use_python("/anaconda2/bin/python")
+```
+
+## R Markdown
+
+This is an R Markdown document. R Markdown documents allows including R-code syntax and plain text (Markdown formatting syntax) which later can be exported to HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+## Running cobaya on RStudio
+
+Cobaya (a code for Bayesian analysis in Cosmology) is a full-written python framework for sampling and statistical modelling in Cosmology. To run cobaya, it is needed to include python-code block in RMarkdown:
+
+```{python, include=TRUE}
+from cobaya.run import run
+import numpy as np
+from collections import OrderedDict as odict
+
+info = {"output": "chains/gaussian",
+    "likelihood": {
+        "gaussian": {
+            "mean": [0.2, 0],
+            "cov": [[0.1, 0.05],
+                    [0.05,0.2]]}},
+    "params": odict([
+        ("a", {
+            "prior": {"min": -0.5, "max": 3},
+            "latex": r"\alpha"}),
+        ("b", {
+            "prior": {"dist": "norm", "loc": 0, "scale": 1},
+            "ref": 0,
+            "proposal": 0.5,
+            "latex": r"\beta"}),
+        ("derived_a", {
+            "latex": r"\alpha^\prime"}),
+        ("derived_b", {
+            "latex": r"\beta^\prime"})]),
+    "sampler": {
+        "mcmc": None}}
+
+updated_info, products = run(info)
+
+# Export the results to GetDist
+from getdist.mcsamples import loadCobayaSamples
+#print updated_info
+#print products["sample"]
+gd_sample = loadCobayaSamples(info, products["sample"])
+# Analyze and plot
+import getdist.plots as gdplt
+import matplotlib.pyplot as plt
+print("Mean:")
+print(gd_sample.getMeans()[:2])
+print("Covariace matrix:")
+print(gd_sample.getCovMat().matrix[:2,:2])
+# %matplotlib inline  # uncomment if running from the Jupyter notebook
+import getdist.plots as gdplot
+gdplot = gdplt.getSubplotPlotter()
+gdplot.triangle_plot(gd_sample, ["a", "b"], filled=True)
+plt.show()
+```
+
+
